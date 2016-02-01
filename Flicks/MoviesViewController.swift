@@ -11,32 +11,20 @@ import AFNetworking
 import MBProgressHUD
 
 class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+    @IBOutlet weak var moviesSearchBar: UISearchBar!
     @IBOutlet var swipeCategory: UISwipeGestureRecognizer!
     @IBOutlet weak var categorySegmenter: UISegmentedControl!
     
-    @IBOutlet weak var moviesSearchBar: UISearchBar!
+    
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var errorView: UIView!
     
-    var filteredMovies: [String]!
+    var filteredData: [String]!
     var movies: [NSDictionary]?
     let refreshControl = UIRefreshControl()
     var bool = true
     
-   
-    @IBAction func categoriesValueChanged(sender: AnyObject) {
-        
-        
-        if(categorySegmenter.selectedSegmentIndex == 0)
-        {
-            bool = true;
-        }
-        else
-        {
-            bool = false
-        }
-        networkRequest(refreshControl);
-    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         //let refreshControl = UIRefreshControl()
@@ -166,7 +154,19 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         }
          networkRequest(refreshControl);
     }
-    
+    @IBAction func categoriesValueChanged(sender: AnyObject) {
+        
+        
+        if(categorySegmenter.selectedSegmentIndex == 0)
+        {
+            bool = true;
+        }
+        else
+        {
+            bool = false
+        }
+        networkRequest(refreshControl);
+    }
     
 }
 
