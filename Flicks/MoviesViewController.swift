@@ -19,7 +19,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var errorView: UIView!
     
-    var filteredData: [String]!
+    var filteredData: [NSDictionary]!
     var movies: [NSDictionary]?
     let refreshControl = UIRefreshControl()
     var bool = true
@@ -74,7 +74,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("MovieCell",forIndexPath: indexPath) as! MovieCell
         
-        let movie = movies![indexPath.row]
+         let movie = movies![indexPath.row]
         let title = movie["title"] as! String
         
         let overview = movie["overview"] as! String
@@ -167,6 +167,22 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         }
         networkRequest(refreshControl);
     }
+    func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
+        filteredData = searchText.isEmpty ? movies : movies!.filter({(movie: NSDictionary) -> Bool in
+            return title!.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil
+        })
+        
+    }
     
-}
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let cell = sender as! UITableViewCell
+        let indexPath = tableView.indexPathForCell(cell)
+        let movie = movies![indexPath!.row]
+        
+        let detailViewController = segue.destinationViewController as! DetailViewController
+        detailViewController.movie = movie
+    }
+    
+  
+   }
 
