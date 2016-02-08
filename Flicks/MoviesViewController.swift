@@ -10,19 +10,21 @@ import UIKit
 import AFNetworking
 import MBProgressHUD
 
-class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
-    @IBOutlet weak var moviesSearchBar: UISearchBar!
+class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchResultsUpdating {
+    
     @IBOutlet var swipeCategory: UISwipeGestureRecognizer!
-    @IBOutlet weak var categorySegmenter: UISegmentedControl!
     
     
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var errorView: UIView!
     
-    var filteredData: [NSDictionary]!
+    var searchBarController: UISearchController!
+    var filteredData: [NSDictionary]?
     var movies: [NSDictionary]?
     let refreshControl = UIRefreshControl()
     var bool = true
+    var endPoint: String!
+    
     
     
     override func viewDidLoad() {
@@ -30,18 +32,26 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         //let refreshControl = UIRefreshControl()
         
         
+        searchBarController = UISearchController(searchResultsController: nil)
+        searchBarController.searchResultsUpdater = self
+        searchBarController.searchBar.sizeToFit()
+        navigationItem.titleView = searchBarController.searchBar
+        searchBarController.hidesNavigationBarDuringPresentation = false
+        definesPresentationContext = true
+        
+    
+        
         
         tableView.dataSource = self
         tableView.delegate = self
         tableView.separatorStyle = .None
         
-        moviesSearchBar.delegate = self
-       // filteredMovies = movie["title"] as! String
         
         
+        networkRequest();
         
-        networkRequest(refreshControl);
-        refreshControl.addTarget(self, action: "networkRequest:", forControlEvents: UIControlEvents.ValueChanged)
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: "refreshControlAction:", forControlEvents: UIControlEvents.ValueChanged)
         tableView.insertSubview(refreshControl, atIndex: 0)
         self.tableView.tableHeaderView = nil;
         
@@ -63,10 +73,10 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
-        
-        if let movies = movies{
-            return movies.count
-        }else{
+        if let filteredData = self.filteredData{
+            return filteredData.count
+        }
+        else{
             return 0
         }
     }
@@ -74,52 +84,99 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("MovieCell",forIndexPath: indexPath) as! MovieCell
         
-         let movie = movies![indexPath.row]
-        let title = movie["title"] as! String
-        
+         let movie = filteredData![indexPath.row]
+         let title = movie["title"] as! String
         let overview = movie["overview"] as! String
+        //let rating = movie["vote_average"] as! String
         
         if let posterPath = movie["poster_path"] as? String {
             let posterBaseUrl = "http://image.tmdb.org/t/p/w500"
             let posterUrl = NSURL(string: posterBaseUrl + posterPath)
-            cell.posterView.setImageWithURL(posterUrl!)
-        }
-        else {
-            // No poster image. Can either set to nil (no image) or a default movie poster image
-            // that you include as an asset
-            cell.posterView.image = nil
+             let urlRequest = NSURLRequest(URL: posterUrl!)
+            cell.posterView.setImageWithURLRequest(urlRequest, placeholderImage: nil,
+                success: {
+                    (request: NSURLRequest, response: NSHTTPURLResponse?, image: UIImage) -> Void in
+                    if response != nil {
+                        cell.posterView.alpha = 0
+                        cell.posterView.image = image
+                        UIView.animateWithDuration(0.3, animations: {cell.posterView.alpha = 1})
+                    }
+                    else {
+                        cell.posterView.image = image
+                    }
+                },
+                failure: {
+                    (request: NSURLRequest, response: NSHTTPURLResponse?, error: NSError) -> Void in })
         }
         
         
         cell.titleLabel.text = title
         cell.overviewLabel.text = overview
       
+        let backgroundView = UIView()
         
+      
+        backgroundView.backgroundColor = UIColor.orangeColor()
+        cell.selectedBackgroundView = backgroundView
+
         
         return cell
     }
     
-    func networkRequest(refreshControl: UIRefreshControl){
-        let apiKey = "a07e22bc18f5cb106bfe4cc1f83ad8ed"
-        var url = NSURL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")
-        if(bool)
-        {
-         url = NSURL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")
-        } else if(!bool)
-        {
-             url = NSURL(string: "https://api.themoviedb.org/3/movie/upcoming?api_key=\(apiKey)")
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        tableView.deselectRowAtIndexPath(indexPath, animated: true)
+                
+    }
+
+    //Method for searchController
+    func updateSearchResultsForSearchController(searchController: UISearchController){
+        if let searchText = searchController.searchBar.text {
+            if searchText.isEmpty {
+                self.filteredData = self.movies
+            }
+            else {
+                self.filteredData = movies!.filter({ (movie: NSDictionary) -> Bool in
+                    if let title = movie["title"] as? String {
+                        //If the Data is similar to what your are searching, put it in the array
+                        if title.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil {
+                            return  true
+                        }
+                            //If not, pass
+                        else{
+                            return false
+                        }
+                    }
+                    return false
+                })
+            }
+              self.tableView.reloadData()
         }
+        
+    }
+    
+    func refreshControlAction(refreshControl: UIRefreshControl) {
+       
+        networkRequest()
+        
+        
+        refreshControl.endRefreshing()
+    }
+    func networkRequest(){
+        
+        
+        let apiKey = "a07e22bc18f5cb106bfe4cc1f83ad8ed"
+        let url = NSURL(string: "https://api.themoviedb.org/3/movie/\(endPoint)?api_key=\(apiKey)")
+        
         let request = NSURLRequest(
             URL: url!,
             cachePolicy: NSURLRequestCachePolicy.ReloadIgnoringLocalCacheData,
             timeoutInterval: 10)
-        
+       
         let session = NSURLSession(
             configuration: NSURLSessionConfiguration.defaultSessionConfiguration(),
             delegate: nil,
             delegateQueue: NSOperationQueue.mainQueue()
         )
-        
         MBProgressHUD.showHUDAddedTo(self.view, animated: true)
         
         let task: NSURLSessionDataTask = session.dataTaskWithRequest(request,
@@ -130,57 +187,40 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                 if let data = dataOrNil {
                     if let responseDictionary = try! NSJSONSerialization.JSONObjectWithData(
                         data, options:[]) as? NSDictionary {
-                            print("response: \(responseDictionary)")
+                            
                             self.movies = responseDictionary["results"] as? [NSDictionary]
+                            self.filteredData = self.movies
                             self.tableView.reloadData()
                     }
                 }
                 self.tableView.reloadData()
                 
                 // Tell the refreshControl to stop spinning
-                refreshControl.endRefreshing()
+                self.refreshControl.endRefreshing()
         });
         task.resume()
     }
     func handleSwipes(sender:UISwipeGestureRecognizer) {
         if (sender.direction == .Right) {
             bool = true
-            categorySegmenter.selectedSegmentIndex = 0
+            
         }
         if(sender.direction == .Left)
         {
             bool = false
-            categorySegmenter.selectedSegmentIndex = 1
+            
         }
-         networkRequest(refreshControl);
-    }
-    @IBAction func categoriesValueChanged(sender: AnyObject) {
-        
-        
-        if(categorySegmenter.selectedSegmentIndex == 0)
-        {
-            bool = true;
-        }
-        else
-        {
-            bool = false
-        }
-        networkRequest(refreshControl);
-    }
-    func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
-        filteredData = searchText.isEmpty ? movies : movies!.filter({(movie: NSDictionary) -> Bool in
-            return title!.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil
-        })
-        
+         self.tableView.reloadData()
     }
     
+    
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        let cell = sender as! UITableViewCell
-        let indexPath = tableView.indexPathForCell(cell)
-        let movie = movies![indexPath!.row]
+        let theCell = sender as! UITableViewCell
+        let indexPath = tableView.indexPathForCell(theCell)
+        let theMovie = filteredData![indexPath!.row]
         
         let detailViewController = segue.destinationViewController as! DetailViewController
-        detailViewController.movie = movie
+        detailViewController.movie = theMovie
     }
     
   
