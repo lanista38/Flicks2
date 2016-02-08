@@ -15,6 +15,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     @IBOutlet var swipeCategory: UISwipeGestureRecognizer!
     
     
+    
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var errorView: UIView!
     
@@ -30,6 +31,10 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     override func viewDidLoad() {
         super.viewDidLoad()
         //let refreshControl = UIRefreshControl()
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.separatorStyle = .SingleLine
+        tableView.separatorColor = UIColor.blackColor()
         
         
         searchBarController = UISearchController(searchResultsController: nil)
@@ -40,13 +45,6 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         definesPresentationContext = true
         
     
-        
-        
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.separatorStyle = .None
-        
-        
         
         networkRequest();
         
@@ -86,8 +84,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
          let movie = filteredData![indexPath.row]
          let title = movie["title"] as! String
-        let overview = movie["overview"] as! String
-        //let rating = movie["vote_average"] as! String
+       // let overview = movie["overview"] as! String
+        let rating = movie["vote_average"] as! Int
+        let releaseDate = movie["release_date"]as! String
         
         if let posterPath = movie["poster_path"] as? String {
             let posterBaseUrl = "http://image.tmdb.org/t/p/w500"
@@ -111,8 +110,9 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         
         cell.titleLabel.text = title
-        cell.overviewLabel.text = overview
-      
+        //cell.overviewLabel.text = overview
+        cell.ratingLabel.text = String(rating) + "/10"
+        cell.releaseDateLabel.text = releaseDate
         let backgroundView = UIView()
         
       
@@ -125,10 +125,11 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        
                 
     }
 
-    //Method for searchController
+    
     func updateSearchResultsForSearchController(searchController: UISearchController){
         if let searchText = searchController.searchBar.text {
             if searchText.isEmpty {
@@ -137,11 +138,11 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
             else {
                 self.filteredData = movies!.filter({ (movie: NSDictionary) -> Bool in
                     if let title = movie["title"] as? String {
-                        //If the Data is similar to what your are searching, put it in the array
+                        
                         if title.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil {
                             return  true
                         }
-                            //If not, pass
+                           
                         else{
                             return false
                         }
@@ -215,12 +216,14 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        
         let theCell = sender as! UITableViewCell
         let indexPath = tableView.indexPathForCell(theCell)
         let theMovie = filteredData![indexPath!.row]
         
         let detailViewController = segue.destinationViewController as! DetailViewController
         detailViewController.movie = theMovie
+        
     }
     
   

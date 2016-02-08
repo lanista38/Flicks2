@@ -32,6 +32,8 @@ class DetailViewController: UIViewController {
         
         overviewDetailLabel.text = overview as? String
         //overviewDetailLabel.sizeToFit()
+        overviewDetailLabel.textAlignment = .Left
+        
         
          let releaseDate = movie["release_date"] as? String
             releaseDateLabel.text = "Release Date: " + releaseDate! as String
