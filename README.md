@@ -33,7 +33,7 @@ Please list two areas of the assignment you'd like to **discuss further with you
 
 Here's a walkthrough of implemented user stories:
 
-<iframe src="http://i.giphy.com/3o6gbgcTiiSKEguPYs.gif" width="480" height="688" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="http://giphy.com/gifs/3o6gbgcTiiSKEguPYs">via GIPHY</a></p>
+<iframe src="http://i.giphy.com/3o6gbgcTiiSKEguPYs.gif"  </iframe>
 
 GIF created with [LiceCap](http://www.cockos.com/licecap/).
 
